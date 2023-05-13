@@ -1,0 +1,39 @@
+embeddings_index = {}
+with open('../input/glove6b50d/glove.6B.50d.txt', encoding='utf-8') as f:
+    for line in f:
+        values = line.split()
+        word = values[0]
+        coefs = np.asarray(values[1:], dtype='float32')
+        embeddings_index[word] = coefs
+    f.close()
+
+print("Glove Loded!")
+
+
+
+""""""
+# Create matrix that holds words that occour together
+""""""
+
+embedding_dimention = 50
+def embedding_matrix_creater(embedding_dimention, word_index):
+    embedding_matrix = np.zeros((len(word_index)+1, embedding_dimention))
+    for word, i in word_index.items():
+        embedding_vector = embeddings_index.get(word)
+        if embedding_vector is not None:
+          # words not found in embedding index will be all-zeros.
+            embedding_matrix[i] = embedding_vector
+    return embedding_matrix
+embedding_matrix = embedding_matrix_creater(50, word_index=vocab)    
+
+
+embed = Embedding(VOCAB_SIZE+1, 
+                  50, 
+                  
+                  input_length=13,
+                  trainable=True)
+
+embed.build((None,))
+embed.set_weights([embedding_matrix])
+
+
