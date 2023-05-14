@@ -6,6 +6,12 @@ from pathlib import Path
 from config import config
 from preprocessing import clean_df
 from zipfile import ZipFile
+import os
+
+import shutil
+import glob
+import json
+
 
 dataset_url = Path('https://www.kaggle.com/datasets/hsankesara/flickr-image-dataset')
 api_command = "kaggle datasets download -d hsankesara/flickr-image-dataset"
