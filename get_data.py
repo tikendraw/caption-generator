@@ -34,11 +34,9 @@ def move_to_dest():
     shutil.copy(src_caption_file_dir, dest_caption_file_dir)
 
 
-
-if __name__=='__main__':
-
+def download_dataset(path):
     print("Downloading...")
-    download_kaggle_dataset(api_command, kaggle_json_filepath='./kaggle.json')
+    download_kaggle_dataset(api_command, kaggle_json_filepath=path)
     print("Downloaded.")
     
 
@@ -52,3 +50,8 @@ if __name__=='__main__':
 
     clean_df()
     print('Cleaned.')
+
+
+
+if __name__=='__main__':
+    print('hello ')
