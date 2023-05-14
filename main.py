@@ -1,7 +1,8 @@
 
 
 import os
-if 'google.colab' in str(get_ipython()):
+import sys
+if 'google.colab' in sys.modules:
     os.system('git clone https://github.com/tikendraw/caption-generator.git -q')
     os.chdir('caption-generator')
 
@@ -41,8 +42,11 @@ from tensorflow.keras.layers import Layer
 from tensorflow import keras
 from tensorflow.keras.utils import array_to_img, img_to_array
 import string
-from tensorflow.keras.callbacks import CSVLogger, EarlyStopping
+from tensorflow.keras.callbacks import CSVLogger, EarlyStopping, TensorBoard
+from model import LearningRateDecayCallback, get_model, masked_acc, masked_loss
 import regex as re
+from preprocessing import preprocess_text, embedding_matrix_creater, mapper
+from utils import create_model_checkpoint
 
 if not os.path.exists('funcyou'):
 	os.system('git clone https://github.com/tikendraw/funcyou -q')
@@ -51,80 +55,82 @@ os.system('pip install funcyou/. -q')
 from preprocessing import clean_words, clean_df
 from config import config
 
+
+
 seed_value = 12321
 os.environ['PYTHONHASHSEED'] = str(seed_value)
 random.seed(seed_value)
 np.random.seed(seed_value)
 
 
-IMG_SIZE           = config.IMG_SIZE
-CHANNELS           = config.CHANNELS
-BATCH_SIZE         = config.BATCH_SIZE
-EPOCHS             = config.EPOCHS
-IMG_SHAPE          = config.IMG_SHAPE
-MAX_LEN            = config.MAX_LEN
-UNITS              = config.UNITS
-LAEARNING_RATE     = config.LEARNING_RATE
-image_dir          = config.image_dir
-caption_file       = config.caption_file
-VOCAB_SIZE         = tokenizer.vocabulary_size()
-# if __name__=='__main__':
+BATCH_SIZE =    config.BATCH_SIZE
+IMG_SIZE =      config.IMG_SIZE
+CHANNELS =      config.CHANNELS
+IMG_SHAPE =     config.IMG_SHAPE
+MAX_LEN =       config.MAX_LEN
+EPOCHS =        config.EPOCHS
+LEARNING_RATE = config.LEARNING_RATE
+UNITS =         config.UNITS
+raw_caption_file =  config.raw_caption_file
+caption_file =  config.caption_file
+image_dir =     config.image_dir
+glove_path =    config.glove_path
+TEST_SIZE =     config.TEST_SIZE
+VAL_SIZE=       config.VAL_SIZE
+EMBEDDING_DIMENSION =   config.EMBEDDING_DIMENSION 
+
+
+
 
 df = pd.read_csv(caption_file)
 
 
+#tokenizer
 tokenizer = TextVectorization(standardize=preprocess_text)
-
-
 tokenizer.adapt(df['comment'])
 
 
-word_to_id = tf.keras.layers.StringLookup(
-    vocabulary=tokenizer.get_vocabulary(), mask_token='', oov_token='[UNK]')
-id_to_word = tf.keras.layers.StringLookup(vocabulary=tokenizer.get_vocabulary(
-), mask_token='', oov_token='[UNK]', invert=True)
+word_to_id = tf.keras.layers.StringLookup(vocabulary=tokenizer.get_vocabulary(), mask_token='', oov_token='[UNK]')
+id_to_word = tf.keras.layers.StringLookup(vocabulary=tokenizer.get_vocabulary(), mask_token='', oov_token='[UNK]', invert=True)
 
 
 
+#GLOVE embedding
 glove_api_command = 'kaggle datasets download -d watts2/glove6b50dtxt'
 glove_url = 'https://www.kaggle.com/datasets/watts2/glove6b50dtxt'
+
 if 'google.colab' in sys.modules:
 
     download_kaggle_dataset(glove_api_command)
     os.makedirs('embedding', exist_ok = True)
     shutil.move('glove6b50dtxt.zip', 'embedding/glove.6B.50d.zip',)
-glove_path = Path("./embedding/glove.6B.50d.zip")
 
 
+# creating embedding matrix
+word_dict = {word: i for i, word in enumerate(tokenizer.get_vocabulary())}
 
-np.save("./embedding/embedding_matrix.npy", embedding_matrix, allow_pickle=True)
+# Creating embedding matrix
+embedding_matrix = embedding_matrix_creater(EMBEDDING_DIMENSION, word_index=word_dict)
 
-ZipFile("embedding_matrix.zip", mode="w").write(
-    "./embedding/embedding_matrix.npy"
-)
+# # Saving embedding_matrix for further use
+# np.save("./embedding/embedding_matrix.npy", embedding_matrix, allow_pickle=True)
+# # compressing
+# ZipFile("embedding_matrix.zip", mode="w").write(
+#     "./embedding/embedding_matrix.npy")
 
 
+# load image model
 resnet = tf.keras.applications.ResNet50V2(
     include_top=False,
     weights="imagenet",
-    input_tensor=tf.keras.layers.Input(shape=IMG_SHAPE)
-
-)
+    input_tensor=tf.keras.layers.Input(shape=IMG_SHAPE))
 
 resnet.trainable = False
 
 
-
-
-
-
-
-
-
-
-
-TEST_SIZE = .05
-VAL_SIZE = .05
+# Creating dataset
+TEST_SIZE = config.TEST_SIZE
+VAL_SIZE =  config.VAL_SIZE
 
 train, val = train_test_split(
     df[['image_path', 'comment']],  test_size=VAL_SIZE, random_state=11)
@@ -133,51 +139,59 @@ train, test = train_test_split(
 
 
 
-train_data = tf.data.Dataset.from_tensor_slices(
-    (train.image_path, train.comment))
+train_data = tf.data.Dataset.from_tensor_slices((train.image_path, train.comment))
 test_data = tf.data.Dataset.from_tensor_slices((test.image_path, test.comment))
 val_data = tf.data.Dataset.from_tensor_slices((val.image_path, val.comment))
 
 
+train_data = train_data.map(lambda x,y:mapper(x, y, tokenizer)).batch(BATCH_SIZE).cache().prefetch(tf.data.AUTOTUNE)
+test_data =   test_data.map(lambda x,y:mapper(x, y, tokenizer)).batch(BATCH_SIZE).cache().prefetch(tf.data.AUTOTUNE)
+val_data =     val_data.map(lambda x,y:mapper(x, y, tokenizer)).batch(BATCH_SIZE).cache().prefetch(tf.data.AUTOTUNE)
 
+# resnet_output_flattened_shape = 8*8*2048
 
+print("Number of training samples: %d" %
+      tf.data.experimental.cardinality(train_data))
+print("Number of validation samples: %d" %
+      tf.data.experimental.cardinality(val_data))
+print("Number of test samples: %d" %
+      tf.data.experimental.cardinality(test_data))
 
-train_data = train_data.batch(BATCH_SIZE).cache().prefetch(tf.data.AUTOTUNE)
-test_data = test_data.map(mapper).batch(BATCH_SIZE).cache().prefetch(tf.data.AUTOTUNE)
-val_data = val_data.map(mapper).batch(BATCH_SIZE).cache().prefetch(tf.data.AUTOTUNE)
+VOCAB_SIZE = tokenizer.vocabulary_size()
+print("Vocabulary size: %d" % VOCAB_SIZE)
 
-
-
-
-
-word_dict = {word: i for i, word in enumerate(textvectorizer.get_vocabulary())}
-
-
-embedding_matrix = embedding_matrix_creater(
-    50, word_index=word_dict
-)
-
-
-
-
-
-model, img_model = get_model()
+model, img_model = get_model(embedding_matrix, VOCAB_SIZE)
 print(model.summary(), img_model.summary())
 
 
 
 
-model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01),
-              loss=masked_loss,
-              metrics=[masked_acc, masked_loss])
+# Example usage
+initial_lr = LEARNING_RATE
+decay_rate = 0.01
+decay_steps = 10
+
+decay_callback = LearningRateDecayCallback(initial_lr, decay_rate, decay_steps)
 
 os.makedirs('log', exist_ok=True)
 csv_logger = CSVLogger('./log/training.log')
+tb_callback = tf.keras.callbacks.TensorBoard('./logs', update_freq=1)
+
+
+
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=initial_lr),
+              loss=masked_loss,
+              metrics=[masked_acc, masked_loss])
+
+
 
 EPOCHS = 10
+
+print(len(train_data) // EPOCHS, len(val_data) // EPOCHS)
+
 steps_per_epoch = int(0.1*(len(train_data) / EPOCHS))
 validation_steps =  int(.2*(len(val_data) / EPOCHS))
-
+print(steps_per_epoch, validation_steps)
 
 history = model.fit(train_data,
                     epochs=EPOCHS,
@@ -185,19 +199,20 @@ history = model.fit(train_data,
                     steps_per_epoch=steps_per_epoch,
                     validation_steps=validation_steps,
                     callbacks=[
-                        csv_logger, create_model_checkpoint(model_name = 'capgen', save_dir = './drive/MyDrive/caption_generator', monitor = 'masked_acc')
+                        decay_callback,
+                        csv_logger, create_model_checkpoint(model_name = 'capgen', save_dir = 'checkpoints', monitor = 'masked_acc')
                                 ]
                     )
 
-model.save(f'/content/drive/MyDrive/caption_generator/{datetime.datetime.now()}-{EPOCHS}.h5')
+model.save(f'/saved_model/{datetime.datetime.now()}-{EPOCHS}.h5')
+
+pred = model.evaluate(test_data)
+print((pred))
+
+# start_token_id = word_to_id('startseq') 
+# end_token_id = word_to_id('endseq') 
 
 
 
-
-start_token = word_to_id('startseq') 
-end_token = word_to_id('endseq') 
-
-
-
-aa = generate_caption(random_image_path, model, tokenizer)
-print(aa)
+# aa = generate_caption(random_image_path, model, tokenizer)
+# print(aa)

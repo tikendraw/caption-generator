@@ -146,3 +146,5 @@ def generate_caption(image_path, model, tokenizer, beam_size=5):
     return ' '.join(caption[1:])
 
 
+if __name__=='__main__':
+    print('utils.py')

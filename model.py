@@ -31,6 +31,7 @@ from tensorflow.keras.utils import array_to_img, img_to_array
 import string
 from tensorflow.keras.callbacks import CSVLogger, EarlyStopping
 import regex as re
+from config import config
 
 
 
@@ -100,3 +101,24 @@ def masked_acc(y_true, y_pred):
     mask = tf.cast(y_true != 0, tf.float32)
 
     return tf.reduce_sum(matchh)/tf.reduce_sum(mask)
+
+
+
+class LearningRateDecayCallback(tf.keras.callbacks.Callback):
+    def __init__(self, initial_learning_rate, decay_rate, decay_steps):
+        super(LearningRateDecayCallback, self).__init__()
+        self.initial_learning_rate = initial_learning_rate
+        self.decay_rate = decay_rate
+        self.decay_steps = decay_steps
+
+    def on_epoch_begin(self, epoch, logs=None):
+        if epoch > 0 and epoch % self.decay_steps == 0:
+            updated_lr = self.initial_learning_rate * (self.decay_rate ** (epoch // self.decay_steps))
+            tf.keras.backend.set_value(self.model.optimizer.lr, updated_lr)
+            print(f"Learning rate updated to: {updated_lr}")
+
+
+
+
+if __name__=='__main__':
+    print('model.py')

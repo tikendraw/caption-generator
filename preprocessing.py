@@ -40,6 +40,24 @@ import regex as re
 
 from funcyou.utils import dir_walk
 from funcyou.dataset import download_kaggle_dataset
+from config import config
+
+
+BATCH_SIZE =    config.BATCH_SIZE 
+IMG_SIZE =      config.IMG_SIZE 
+CHANNELS =      config.CHANNELS 
+IMG_SHAPE =     config.IMG_SHAPE 
+MAX_LEN =       config.MAX_LEN 
+EPOCHS =        config.EPOCHS 
+LEARNING_RATE = config.LEARNING_RATE 
+UNITS =         config.UNITS 
+raw_caption_file =  config.raw_caption_file 
+caption_file =  config.caption_file 
+image_dir =     config.image_dir 
+glove_path =    config.glove_path 
+TEST_SIZE =     config.TEST_SIZE 
+VAL_SIZE=       config.VAL_SIZE
+EMBEDDING_DIMENSION =   config.EMBEDDING_DIMENSION 
 
 
 def clean_words(x, words_to_keep):
@@ -79,6 +97,14 @@ def mapper(x, y, tokenizer):
     y_out =  tf.pad(y_out, [[0, MAX_LEN - tf.shape(y_out)[0]]], constant_values=0)
 
     return (x, y_in), y_out
+
+# load image model
+resnet = tf.keras.applications.ResNet50V2(
+    include_top=False,
+    weights="imagenet",
+    input_tensor=tf.keras.layers.Input(shape=IMG_SHAPE))
+
+resnet.trainable = False
 
 
 @tf.function
@@ -182,3 +208,5 @@ def clean_df():  # sourcery skip: use-fstring-for-concatenation
 
 
 
+if __name__=='__main__':
+    print('preprocessing.py')
