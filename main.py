@@ -150,9 +150,9 @@ test_data = tf.data.Dataset.from_tensor_slices((test.image_path, test.comment))
 val_data = tf.data.Dataset.from_tensor_slices((val.image_path, val.comment))
 
 
-train_data = train_data.map(lambda x,y:mapper(x, y, tokenizer)).batch(BATCH_SIZE).cache().prefetch(tf.data.AUTOTUNE)
-test_data =   test_data.map(lambda x,y:mapper(x, y, tokenizer)).batch(BATCH_SIZE).cache().prefetch(tf.data.AUTOTUNE)
-val_data =     val_data.map(lambda x,y:mapper(x, y, tokenizer)).batch(BATCH_SIZE).cache().prefetch(tf.data.AUTOTUNE)
+train_data = train_data.map(lambda x,y:mapper(x, y, tokenizer)).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+test_data =   test_data.map(lambda x,y:mapper(x, y, tokenizer)).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+val_data =     val_data.map(lambda x,y:mapper(x, y, tokenizer)).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 
 # resnet_output_flattened_shape = 8*8*2048
 
@@ -213,12 +213,14 @@ import pandas as pd
 
 
 plot_history(history, plot = ['masked_loss','masked_acc'], split = ['train','val'], epoch= EPOCHS, figsize = (20,10), colors = ['r','b'])
-from google.colab import drive
-drive.mount('/content/drive')
+
+# from google.colab import drive
+# drive.mount('/content/drive')
 
 # model.save(f'/content/drive/MyDrive/cap-gen/{datetime.datetime.now()}-{EPOCHS}.tf')
+model.save(f'./cap-gen/{datetime.datetime.now()}-{EPOCHS}.tf')
 
-pred = model.predict(test_data.take(1))
+# pred = model.predict(test_data.take(1))
 # print((pred.shape))
 
 # start_token_id = word_to_id('startseq') 
@@ -230,5 +232,5 @@ pred = model.predict(test_data.take(1))
 # print(aa)
 
 # pred.shape
-from preprocessing import tokens_to_text
-tokens_to_text(pred, tokenizer)
+# from preprocessing import tokens_to_text
+# tokens_to_text(pred, tokenizer)
