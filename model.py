@@ -42,6 +42,7 @@ IMG_SHAPE = config.IMG_SHAPE
 MAX_LEN = config.MAX_LEN
 UNITS = config.UNITS
 EPOCHS = config.EPOCHS
+EMBEDDING_DIMENSION =   config.EMBEDDING_DIMENSION 
 
 
 def get_model(embedding_matrix, VOCAB_SIZE):
@@ -50,7 +51,7 @@ def get_model(embedding_matrix, VOCAB_SIZE):
 
     embedding = Embedding(
         input_dim=VOCAB_SIZE,
-        output_dim=50,
+        output_dim=EMBEDDING_DIMENSION,
         mask_zero=True,
         input_length=MAX_LEN,
         trainable=False,
@@ -58,26 +59,56 @@ def get_model(embedding_matrix, VOCAB_SIZE):
     embedding.build([None])
     embedding.set_weights([embedding_matrix])
 
-    image_input = Input(shape=(2048,))
-    x = Dense(UNITS * MAX_LEN)(image_input)
-    x = tf.reshape(x, (-1, MAX_LEN, UNITS))
 
-    txt_input = Input(shape=(MAX_LEN,))
+    image_input = Input(shape=(2048,), name = 'image_input')
+    print('image_input: ',image_input.shape)
+
+    x = Dropout(.3)(image_input)
+    print('enc dropout: ',x.shape)
+    
+    x = Dense(MAX_LEN*UNITS, activation = 'relu', kernel_initializer = 'glorot_uniform' )(x)
+    print('Dense: ',x.shape)
+    
+    x = tf.reshape(x, (-1, MAX_LEN, UNITS))
+    print('reshape: ',x.shape)
+
+
+    txt_input = Input(shape=(MAX_LEN,), name = 'text_input')
+    print('txt_input: ',txt_input.shape)
+    
     i = embedding(txt_input)
+    print('text_embedding: ',i.shape)
+    
     i, j, k = encoder(i)
+    print('encoder output: ',i.shape)
+    
     i = Dropout(.3)(i)
+    print('enc dropout: ',i.shape)
+    
     i = decoder(i, initial_state=[j, k])
+    print('decoder output: ',i.shape)
+    
     i = Dropout(.3)(i)
+    print('decoder dropout: ',i.shape)
 
     l = Attention()([x, i])
     ll = Attention()([i, x])
+    print('attention: ',l.shape, ll.shape)
 
     m = Concatenate()([x, i, l, ll])
-    m = Dropout(.3)(m)
-    m = Dense(MAX_LEN*2)(m)
-    m = Dense(MAX_LEN*2)(m)
-    m = Dense(VOCAB_SIZE)(m)
+    print('concat: ', m.shape)
 
+    m = Dropout(.3)(m)
+    print('concat dropout: ',m.shape)
+
+    m = Dense(MAX_LEN*UNITS)(m)
+    print('Dense1: ', m.shape)
+    
+    m = Dense(MAX_LEN*UNITS)(m)
+    print('Dense2: ', m.shape)
+
+    m = Dense(VOCAB_SIZE)(m)
+    print('Dense3_final: ', m.shape)
     return Model(inputs=[image_input, txt_input], outputs=m)
 
 
