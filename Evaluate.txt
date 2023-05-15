@@ -1,0 +1,94 @@
+### Evaluate_____________________________________________________________________________________________
+
+#this function maps an integer to a word
+def word_for_id(integer, tokenizer):
+    for word, index in tokenizer.word_index.items():
+        if index == integer:
+            return word
+    return None
+
+#The function below generates a textual description given a trained model, 
+#and a given prepared photo as input. It calls the function word_for_id() 
+#in order to map an integer prediction back to a word.
+def generate_desc(model, tokenizer, photo, max_length):
+    #start tge generation process
+    in_text = 'startseq'
+    #iterating over the max_length since the maximum length of the description can be that only
+    for i in range(max_length):
+        #integer ncoding input sequence
+        sequence = tokenizer.texts_to_sequences([in_text])[0]
+        #padding the input
+        sequence = pad_sequences([sequence], maxlen=max_length)
+        #predicting next word
+        #the predict function will return probability
+        prob = model.predict([photo,sequence], verbose=0)
+        #converting the probability to integer
+        prob = argmax(prob)
+        #calling the word_for_id function in order to map integer to word
+        word = word_for_id(prob, tokenizer)
+        #breaking if word cannot be mapped
+        if word is None:
+            break
+        #appending as input
+        in_text += ' ' + word
+        #break if end is predicted
+        if word == 'endseq':
+            break
+    return in_text
+
+#the below function evaluates the skill of the model
+def evaluate_model(model, descriptions, photos, tokenizer, max_length):
+    actual, predicted = list(), list()
+    for key, desc_list in descriptions.items():
+        prediction = generate_desc(model, tokenizer, photos[key], max_length)
+        actual_desc = [d.split() for d in desc_list]
+        actual.append(actual_desc)
+        predicted.append(prediction.split())
+
+    print('BLEU-1: ', corpus_bleu(actual, predicted, weights=(1.0, 0, 0, 0)))
+    print('BLEU-2: ', corpus_bleu(actual, predicted, weights=(0.5, 0.5, 0, 0)))
+    print('BLEU-3: ', corpus_bleu(actual, predicted, weights=(0.3, 0.3, 0.3, 0)))
+    print('BLEU-4: ', corpus_bleu(actual, predicted, weights=(0.25, 0.25, 0.25, 0.25)))
+    
+def max_length(descriptions):
+    lines = to_lines(descriptions)
+    return max(len(d.split()) for d in lines)
+    
+    
+    
+    ### generate_____________________________________________________________________________________________
+    
+    def extract_features(filename):
+    model = VGG16()
+    model.layers.pop()
+    model = Model(inputs=model.inputs, outputs=model.layers[-1].output)
+    image = load_img(filename, target_size=(224, 224))
+    image = img_to_array(image)
+    image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
+    image = preprocess_input(image)
+    feature = model.predict(image, verbose=0)
+    return feature
+
+def word_for_id(integer, tokenizer):
+    for word, index in tokenizer.word_index.items():
+        if index == integer:
+            return word
+    return None
+
+def generate_desc(model, tokenizer, photo, max_length):
+    in_text = 'startseq'
+    for i in range(max_length):
+        sequence = tokenizer.texts_to_sequences([in_text])[0]
+        sequence = pad_sequences([sequence], maxlen=max_length)
+        yhat = model.predict([photo,sequence], verbose=0)
+        yhat = argmax(yhat)
+        word = word_for_id(yhat, tokenizer)
+        if word is None:
+            break
+        in_text += ' ' + word
+        if word == 'endseq':
+            break
+    return in_text
+
+tokenizer = load(open('tokenizer.pkl', 'rb'))
+max_length = 34
