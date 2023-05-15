@@ -1,10 +1,17 @@
-
+# Dependencies
 
 import os
 import sys
 if 'google.colab' in sys.modules:
     os.system('git clone https://github.com/tikendraw/caption-generator.git -q')
     os.chdir('caption-generator')
+
+
+if not os.path.exists('funcyou'):
+	os.system('git clone https://github.com/tikendraw/funcyou -q')
+
+# os.system('pip install funcyou/. -q')
+
 
 import numpy as np
 import pandas as pd
@@ -23,12 +30,7 @@ import regex as re
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from tensorflow.keras.utils import pad_sequences
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-from PIL import Image
-from collections import Counter
+
 
 from tensorflow.keras.applications.resnet50 import preprocess_input as resnet_preprocessing
 from tensorflow.keras.layers import (
@@ -44,18 +46,13 @@ from tensorflow.keras.utils import array_to_img, img_to_array
 import string
 from tensorflow.keras.callbacks import CSVLogger, EarlyStopping, TensorBoard
 from model import LearningRateDecayCallback, get_model, masked_acc, masked_loss
-import regex as re
-from preprocessing import preprocess_text, embedding_matrix_creater, mapper
+from preprocessing import preprocess_text, embedding_matrix_creater, mapper, clean_words, clean_df
 from utils import create_model_checkpoint
 
-if not os.path.exists('funcyou'):
-	os.system('git clone https://github.com/tikendraw/funcyou -q')
-os.system('pip install funcyou/. -q')
-
-from preprocessing import clean_words, clean_df
 from config import config
 
-
+from get_data import download_dataset
+from funcyou.dataset import download_kaggle_dataset
 
 seed_value = 12321
 os.environ['PYTHONHASHSEED'] = str(seed_value)
@@ -79,10 +76,18 @@ TEST_SIZE =     config.TEST_SIZE
 VAL_SIZE=       config.VAL_SIZE
 EMBEDDING_DIMENSION =   config.EMBEDDING_DIMENSION 
 
+pathh = '/content/kaggle.json'
+if 'google.colab' in sys.modules:
+    download_dataset(pathh)
 
-
-
+# Reading
 df = pd.read_csv(caption_file)
+print(df.info())
+
+df = df[df.comment_number == 1]
+print(df.shape)
+# Tokenize
+
 
 
 #tokenizer
@@ -95,15 +100,16 @@ id_to_word = tf.keras.layers.StringLookup(vocabulary=tokenizer.get_vocabulary(),
 
 
 
+
 #GLOVE embedding
 glove_api_command = 'kaggle datasets download -d watts2/glove6b50dtxt'
 glove_url = 'https://www.kaggle.com/datasets/watts2/glove6b50dtxt'
 
-if 'google.colab' in sys.modules:
+# if 'google.colab' in sys.modules:
 
-    download_kaggle_dataset(glove_api_command)
-    os.makedirs('embedding', exist_ok = True)
-    shutil.move('glove6b50dtxt.zip', 'embedding/glove.6B.50d.zip',)
+#     download_kaggle_dataset(glove_api_command)
+#     os.makedirs('embedding', exist_ok = True)
+#     shutil.move('glove6b50dtxt.zip', 'embedding/glove.6B.50d.zip',)
 
 
 # creating embedding matrix
@@ -160,15 +166,20 @@ print("Number of test samples: %d" %
 VOCAB_SIZE = tokenizer.vocabulary_size()
 print("Vocabulary size: %d" % VOCAB_SIZE)
 
-model, img_model = get_model(embedding_matrix, VOCAB_SIZE)
-print(model.summary(), img_model.summary())
+
+model = get_model(embedding_matrix, VOCAB_SIZE)
+print(model.summary())
+
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+              loss=masked_loss,
+              metrics=[masked_acc, masked_loss])
 
 
-
+# model = tf.keras.models.load_model('/content/drive/MyDrive/cap-gen/2023-05-14 08:04:36.705364-30.tf')
 
 # Example usage
 initial_lr = LEARNING_RATE
-decay_rate = 0.01
+decay_rate = 0.001
 decay_steps = 10
 
 decay_callback = LearningRateDecayCallback(initial_lr, decay_rate, decay_steps)
@@ -176,16 +187,8 @@ decay_callback = LearningRateDecayCallback(initial_lr, decay_rate, decay_steps)
 os.makedirs('log', exist_ok=True)
 csv_logger = CSVLogger('./log/training.log')
 tb_callback = tf.keras.callbacks.TensorBoard('./logs', update_freq=1)
-
-
-
-model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=initial_lr),
-              loss=masked_loss,
-              metrics=[masked_acc, masked_loss])
-
-
-
-EPOCHS = 10
+print(initial_lr)
+EPOCHS = 3
 
 print(len(train_data) // EPOCHS, len(val_data) // EPOCHS)
 
@@ -193,21 +196,30 @@ steps_per_epoch = int(0.1*(len(train_data) / EPOCHS))
 validation_steps =  int(.2*(len(val_data) / EPOCHS))
 print(steps_per_epoch, validation_steps)
 
+
 history = model.fit(train_data,
                     epochs=EPOCHS,
                     validation_data=val_data,
                     steps_per_epoch=steps_per_epoch,
                     validation_steps=validation_steps,
                     callbacks=[
-                        decay_callback,
+                        # decay_callback,
                         csv_logger, create_model_checkpoint(model_name = 'capgen', save_dir = 'checkpoints', monitor = 'masked_acc')
                                 ]
                     )
 
-model.save(f'/saved_model/{datetime.datetime.now()}-{EPOCHS}.h5')
+from funcyou.plot import plot_history
+import pandas as pd
 
-pred = model.evaluate(test_data)
-print((pred))
+
+plot_history(history, plot = ['masked_loss','masked_acc'], split = ['train','val'], epoch= EPOCHS, figsize = (20,10), colors = ['r','b'])
+from google.colab import drive
+drive.mount('/content/drive')
+
+# model.save(f'/content/drive/MyDrive/cap-gen/{datetime.datetime.now()}-{EPOCHS}.tf')
+
+pred = model.predict(test_data.take(1))
+# print((pred.shape))
 
 # start_token_id = word_to_id('startseq') 
 # end_token_id = word_to_id('endseq') 
@@ -216,3 +228,7 @@ print((pred))
 
 # aa = generate_caption(random_image_path, model, tokenizer)
 # print(aa)
+
+# pred.shape
+from preprocessing import tokens_to_text
+tokens_to_text(pred, tokenizer)

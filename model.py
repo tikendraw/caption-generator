@@ -61,7 +61,6 @@ def get_model(embedding_matrix, VOCAB_SIZE):
     image_input = Input(shape=(2048,))
     x = Dense(UNITS * MAX_LEN)(image_input)
     x = tf.reshape(x, (-1, MAX_LEN, UNITS))
-    img_model = Model(inputs=image_input, outputs=x)
 
     txt_input = Input(shape=(MAX_LEN,))
     i = embedding(txt_input)
@@ -75,10 +74,11 @@ def get_model(embedding_matrix, VOCAB_SIZE):
 
     m = Concatenate()([x, i, l, ll])
     m = Dropout(.3)(m)
-
+    m = Dense(MAX_LEN*2)(m)
+    m = Dense(MAX_LEN*2)(m)
     m = Dense(VOCAB_SIZE)(m)
 
-    return Model(inputs=[img_model.input, txt_input], outputs=m), img_model
+    return Model(inputs=[image_input, txt_input], outputs=m)
 
 
 
@@ -122,3 +122,4 @@ class LearningRateDecayCallback(tf.keras.callbacks.Callback):
 
 if __name__=='__main__':
     print('model.py')
+
