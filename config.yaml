@@ -19,7 +19,7 @@ units: 16
 
 # Model Evaluation
 test_size: 0.05
-validation_size: 0.05
+val_size: 0.05
 
 # Embedding
 embedding_dimension: 50

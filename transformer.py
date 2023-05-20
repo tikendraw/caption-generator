@@ -67,15 +67,17 @@ EPOCHS                                  = config['epochs']
 LEARNING_RATE                           = config['learning_rate']
 UNITS                                   = config['units']
 TEST_SIZE                               = config['test_size']
-VALIDATION_SIZE                         = config['validation_size']
+VALIDATION_SIZE                         = config['val_size']
 EMBEDDING_DIMENSION                     = config['embedding_dimension']
 GLOVE_PATH                              = config['glove_path']
 D_MODEL                                 = config['d_model']
-NUM_HEADS                               = config['num_heads']    
+NUM_HEADS                               = config['num_heads']
+NUM_LAYERS                               = config['num_layers']    
+    
 PATCH_SIZE                              = config['patch_size']    
 TRANSFORMER_LAYERS                      = config['transformer_layers']            
 
-NUM_PATCHES = (IMG_SIZE // PATCH_SIZE) ** 2 # trich here is to match max_len to num_patches for matching the shapes for concatination
+NUM_PATCHES = (IMG_SIZE // PATCH_SIZE) ** 2 # trick here is to match max_len to num_patches for matching the shapes for concatination
 
 
 
