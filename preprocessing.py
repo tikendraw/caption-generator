@@ -41,23 +41,30 @@ import regex as re
 from funcyou.utils import dir_walk
 from funcyou.dataset import download_kaggle_dataset
 from config import config
+import yaml
+
+config_file_path = './config.yaml'
+
+# Read the config file 
+with open(config_file_path, 'r') as file:
+    config = yaml.safe_load(file)
 
 
-BATCH_SIZE =    config.BATCH_SIZE 
-IMG_SIZE =      config.IMG_SIZE 
-CHANNELS =      config.CHANNELS 
-IMG_SHAPE =     config.IMG_SHAPE 
-MAX_LEN =       config.MAX_LEN 
-EPOCHS =        config.EPOCHS 
-LEARNING_RATE = config.LEARNING_RATE 
-UNITS =         config.UNITS 
-raw_caption_file =  config.raw_caption_file 
-caption_file =  config.caption_file 
-image_dir =     config.image_dir 
-glove_path =    config.glove_path 
-TEST_SIZE =     config.TEST_SIZE 
-VAL_SIZE=       config.VAL_SIZE
-EMBEDDING_DIMENSION =   config.EMBEDDING_DIMENSION 
+BATCH_SIZE =        config['batch_size'] 
+IMG_SIZE =          config['img_size'] 
+CHANNELS =          config['channels'] 
+IMG_SHAPE =         config['img_shape'] 
+MAX_LEN =           config['max_len'] 
+EPOCHS =            config['epochs'] 
+LEARNING_RATE =     config['learning_rate'] 
+UNITS =             config['units'] 
+raw_caption_file =  config['raw_caption_file'] 
+caption_file =      config['caption_file'] 
+image_dir =         config['image_dir'] 
+glove_path =        config['glove_path'] 
+TEST_SIZE =         config['test_size'] 
+VAL_SIZE=           config['val_size']
+EMBEDDING_DIMENSION =   config['embedding_dimension'] 
 
 
 def clean_words(x, words_to_keep):
@@ -177,7 +184,7 @@ def clean_df():  # sourcery skip: use-fstring-for-concatenation
     df = df.dropna()
 
     #new column
-    df['word_length'] = df['comment'].apply(lambda x: len(str(x).split()))
+    df['sentence_length'] = df['comment'].apply(lambda x: len(str(x).split()))
 
 
 
