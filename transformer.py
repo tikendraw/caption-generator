@@ -77,7 +77,8 @@ NUM_LAYERS                               = config['num_layers']
 PATCH_SIZE                              = config['patch_size']    
 TRANSFORMER_LAYERS                      = config['transformer_layers']            
 
-NUM_PATCHES = (IMG_SIZE // PATCH_SIZE) ** 2 # trick here is to match max_len to num_patches for matching the shapes for concatination
+NUM_PATCHES = (IMG_SIZE // PATCH_SIZE) ** 2 
+# trick here is to match max_len to num_patches for matching the shapes for concatination
 
 
 
@@ -116,12 +117,6 @@ class PositionalEmbedding(tf.keras.layers.Layer):
     x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
     x = x + self.pos_encoding[tf.newaxis, :length, :]
     return x
-
-
-patch_size = 42  # Size of the patches to be extract from the input images
-num_patches = (image_size // patch_size) ** 2 # trich here is to match max_len to num_patches for matching the shapes for concatination
-
-
 
 
 class Patches(tf.keras.layers.Layer):
@@ -169,20 +164,26 @@ class BaseAttention(tf.keras.layers.Layer):
 
 
 class CrossAttention(BaseAttention):
-  def call(self, x, context):
-    attn_output, attn_scores = self.mha(
-        query=x,
-        key=context,
-        value=context,
-        return_attention_scores=True)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.last_attn_scores=None
+    
+    def call(self, x, context):
+        attn_output, attn_scores = self.mha(
+            query=x,
+            key=context,
+            value=context,
+            return_attention_scores=True)
 
-    # Cache the attention scores for plotting later.
-    self.last_attn_scores = attn_scores
+        # Cache the attention scores for plotting later.
+        self.last_attn_scores = attn_scores
 
-    x = self.add([x, attn_output])
-    x = self.layernorm(x)
+        x = self.add([x, attn_output])
+        x = self.layernorm(x)
 
-    return x
+        return x
+
+
 
 
 class GlobalSelfAttention(BaseAttention):
@@ -291,13 +292,13 @@ class DecoderLayer(tf.keras.layers.Layer):
 
         self.causal_attention = CausalSelfAttention(
             num_heads=num_heads,
-            key_dims = d_model, 
+            key_dim = d_model, 
             dropout= dropout_rate
             )
         
         self.cross_attention = CrossAttention(
             num_heads=num_heads,
-            key_dims = d_model, 
+            key_dim = d_model, 
             dropout= dropout_rate
             )
         
@@ -383,11 +384,11 @@ class CaptionGenerator(tf.keras.Model):
         self.final_layer = tf.keras.layers.Dense(vocab_size)
         
     def call(self, inputs):  # sourcery skip: inline-immediately-returned-variable, use-contextlib-suppress
-        x, context  = inputs
+        img, txt  = inputs
 
-        context = self.encoder(context)  # (batch_size, context_len, d_model)
+        img = self.encoder(img)  # (batch_size, context_len, d_model)
 
-        x = self.decoder(x=X, context=context)  # (batch_size, target_len, d_model)
+        x = self.decoder(x=txt, context=img)  # (batch_size, target_len, d_model)
 
         # Final linear layer output.
         logits = self.final_layer(x)  # (batch_size, max_len, target_vocab_size)
@@ -395,3 +396,6 @@ class CaptionGenerator(tf.keras.Model):
         # Return the final output and the attention weights.
         return logits
 
+
+if __name__=='__main__':
+    print('transformer.py')
