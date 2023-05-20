@@ -1,0 +1,33 @@
+# Data Loading
+raw_caption_file: input/flickr30k/results.csv
+caption_file: input/flickr30k/results_cleaned.csv
+image_dir: input/flickr30k/images
+
+seed_value : 12321
+
+# Data Preprocessing
+img_size: 256
+channels: 3
+img_shape: [256, 256, 3]
+max_len: 50
+
+# Model Training
+batch_size: 8
+epochs: 10
+learning_rate: 0.01
+units: 16
+
+# Model Evaluation
+test_size: 0.05
+validation_size: 0.05
+
+# Embedding
+embedding_dimension: 50
+glove_path: embedding/glove.6B.50d.zip
+
+#something
+d_model : 128
+num_layers : 4
+num_heads : 4
+patch_size : 42
+transformer_layers : 8
