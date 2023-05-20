@@ -170,46 +170,7 @@ def tokens_to_text(tokens):
 from config import config
 from utils import word_count_df
 
-def clean_df():  # sourcery skip: use-fstring-for-concatenation
-    caption_file = config.caption_file
-    df = pd.read_csv(config.raw_caption_file, delimiter='|', on_bad_lines='skip')
-    df.columns = df.columns.str.lower().str.strip()
 
-    # dropping some values at 19999
-    df.drop(19999, inplace = True)
-    df['comment_number'] = pd.to_numeric(df['comment_number'])
-
-    #removing nulls
-    df.isnull().sum()
-    df = df.dropna()
-
-    #new column
-    df['sentence_length'] = df['comment'].apply(lambda x: len(str(x).split()))
-
-
-
-    countdf = word_count_df(df['comment'])
-    os.makedirs('data', exist_ok=True)
-    countdf.to_csv('data/word_count_df.csv')
-
-    _high = countdf[countdf['counts']>3]
-
-    _high.sort_values('counts', ascending = True).head(10)
-    words_to_keep = _high.word.values
-    words_to_keep = set(words_to_keep )
-
-
-    # removing low frequecy words
-    df['comment'] = df['comment'].map(lambda x: clean_words(x,words_to_keep=words_to_keep))
-
-    START_TOKEN = 'startseq'
-    END_TOKEN = 'endseq'
-
-    df['comment'] = START_TOKEN + ' ' + df['comment'] + ' ' + END_TOKEN
-    df['image_path'] = str(config.image_dir) + '/' + df['image_name']
-
-    
-    df.to_csv(str(caption_file))
 
 
 
