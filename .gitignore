@@ -1,4 +1,7 @@
 input/
 funcyou/
 embedding/glove.6B.50d.zip
+embedding/glove.6B.50d.txt
 drive/
+__pycache__
+.ipynb_checkpoints
