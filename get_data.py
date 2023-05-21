@@ -4,7 +4,6 @@ from tensorflow.keras.layers import GlobalAveragePooling2D
 from funcyou.dataset import download_kaggle_dataset
 from pathlib import Path
 from config import config
-from preprocessing import clean_df
 from zipfile import ZipFile
 import os
 
@@ -48,7 +47,6 @@ def download_dataset(path):
     move_to_dest()
     print('Done')
 
-    clean_df()
     print('Cleaned.')
 
 
