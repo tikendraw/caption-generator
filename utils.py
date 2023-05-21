@@ -47,7 +47,6 @@ from funcyou.dataset import download_kaggle_dataset
 
 import nltk
 from nltk import word_tokenize
-nltk.download('punkt')
 
 # Visualizing
 def plot_image_with_captions(df, n: int = 3):

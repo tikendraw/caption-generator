@@ -4,10 +4,10 @@ import pandas as pd
 import regex as re
 from preprocessing import  clean_words
 from utils import  word_count_df
-
+import polars as pl
 from collections import Counter
 
-def check_words_in_list(string, words):
+def check_words_in_list(string, words:list):
     """
     Checks if any words in a string are not in a provided list.
 
@@ -28,42 +28,68 @@ def check_words_in_list(string, words):
 
 
 def clean_the_df(filepath, save_dir):
-    # sourcery skip: use-fstring-for-concatenation
-    df = pd.read_csv(filepath, sep='|')
+    
+    df = pl.read_csv(filepath, sep='|', ignore_errors = True)
+    df.columns = [str(i).strip().lower() for i in df.columns]
+    
+    df = df.drop_nulls()
 
-    # Clean column names
-    df.columns = df.columns.str.strip().str.lower()
-
-    # Drop row at index 19999
-    df.drop(19999, inplace=True)  # Bad value at index 19999
-
-    # Convert 'comment_number' column to numeric
-    df['comment_number'] = pd.to_numeric(df['comment_number'])
+    # Convert 'comment_number' column to int
+    df = df.with_columns([
+        pl.col('comment_number').cast(pl.Int64, strict=False).alias('comment_number'),        
+        ])
 
     # Remove rows with null values
-    df = df.dropna()
+    df = df.drop_nulls()
 
-    # Count words and filter rare words
-    countdf = word_count_df(df['comment'])
-    words_to_keep = set(countdf.loc[countdf['counts'] > 4, 'word'])
 
-    # Check for rare words in 'comment' column
-    df['has_rare_words'] = df['comment'].map(lambda x: check_words_in_list(x, words_to_keep))
-    # Clean words in 'comment' column
-    df['comment'] = df['comment'].map(lambda x: clean_words(x, words_to_keep=words_to_keep))
-    # Check for rare words again
-    df['has_rare_words2'] = df['comment'].map(lambda x: check_words_in_list(x, words_to_keep))
+    words = set(df['comment'])
+
+    word_list = []
+    for sentence in words:
+        sentence = sentence.lower()
+        words = sentence.split()
+        word_list.extend(words)
+
+    count_dict = Counter(word_list)
+
+    countdf = pd.DataFrame([count_dict.keys(), count_dict.values()]).T
+    countdf.columns = ['word', 'counts']
+    countdf.to_csv('word_count.csv')
+
+    words_to_keep = set(countdf[countdf.counts>4]['word'].values)
 
     # Add start and end tokens to 'comment' column
-    START_TOKEN = 'startseq'
-    END_TOKEN = 'endseq'
+    START_TOKEN = 'startseq '
+    END_TOKEN = ' endseq'
+
+    # Clean words in 'comment' column
+    df = df.with_columns([
+            pl.col("comment").apply(lambda x: re.sub(r'[.?!,¿|]', r' \g<0> ', x)).alias('comment')             
+            ])
     
-    df['comment'] = START_TOKEN + ' ' + df['comment'] + ' ' + END_TOKEN
-    # Calculate sentence length
-    df['sent_length'] = df['comment'].str.split().str.len()
+    # Clean words in 'comment' column
+    df = df.with_columns([
+            pl.col("comment").apply(lambda x: clean_words(x, words_to_keep=words_to_keep)).alias('comment')
+            ])
+    
+    # Clean words in 'comment' column
+    df = df.with_columns([
+            pl.col("comment").apply(lambda x: set(x.lower().split()).issubset(words_to_keep)).alias('no_rare_words')
+            ])
+    
+    # Clean words in 'comment' column
+    df = df.with_columns([
+            pl.col("comment").apply(lambda x: START_TOKEN+ ' ' + x + ' '+END_TOKEN ).alias('comment')             
+        ])
+
+    df = df.with_columns([
+            pl.col("comment").apply(lambda x: len(x.split())).alias('sent_len')
+        ])
+
 
     # Save the dataframe
     if save_dir.endswith('.csv'):
-        df.to_csv(save_dir, index=False)
+        df.write_csv(save_dir)
     else:
-        df.to_csv(os.path.join(save_dir, 'cleaned.csv'), index=False)
+        df.write_csv(os.path.join(save_dir, 'cleaned.csv'))

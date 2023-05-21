@@ -46,7 +46,7 @@ from tensorflow.keras.utils import array_to_img, img_to_array
 import string
 from tensorflow.keras.callbacks import CSVLogger, EarlyStopping, TensorBoard
 from model import LearningRateDecayCallback, get_model, masked_acc, masked_loss
-from preprocessing import preprocess_text, embedding_matrix_creater, mapper, clean_words, clean_df
+from preprocessing import preprocess_text, embedding_matrix_creater, mapper, clean_words
 from utils import create_model_checkpoint
 
 from config import config
@@ -220,17 +220,4 @@ plot_history(history, plot = ['masked_loss','masked_acc'], split = ['train','val
 # model.save(f'/content/drive/MyDrive/cap-gen/{datetime.datetime.now()}-{EPOCHS}.tf')
 model.save(f'./cap-gen/{datetime.datetime.now()}-{EPOCHS}.tf')
 
-# pred = model.predict(test_data.take(1))
-# print((pred.shape))
 
-# start_token_id = word_to_id('startseq') 
-# end_token_id = word_to_id('endseq') 
-
-
-
-# aa = generate_caption(random_image_path, model, tokenizer)
-# print(aa)
-
-# pred.shape
-# from preprocessing import tokens_to_text
-# tokens_to_text(pred, tokenizer)
