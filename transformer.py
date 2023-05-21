@@ -5,44 +5,22 @@ import numpy as np
 import pandas as pd
 import random, math
 import tensorflow as tf
-import glob
-import shutil
-from zipfile import ZipFile
 import datetime
-import sys
-from functools import cache
 from pathlib import Path
-from tqdm import tqdm
 import regex as re
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 
-from sklearn.model_selection import train_test_split
 
-
-from tensorflow.keras.applications.resnet50 import preprocess_input as resnet_preprocessing
 from tensorflow.keras.layers import (
-    TextVectorization, Embedding, LSTM, GRU, Bidirectional, TimeDistributed, Dense, Attention, MultiHeadAttention, Flatten, Dropout,
-    Concatenate, Activation, GlobalAveragePooling2D
+    TextVectorization, Embedding, Dense, Attention, MultiHeadAttention, Flatten, Dropout,
+    Concatenate, Activation, GlobalAveragePooling2D, Input
     )
-from tensorflow.keras.layers import LSTM, Embedding, Input, Dense, Dropout, Concatenate
-from tensorflow.keras.models import Model
-from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Layer
-from tensorflow import keras
-from tensorflow.keras.utils import array_to_img, img_to_array
+
 import string
-from tensorflow.keras.callbacks import CSVLogger, EarlyStopping, TensorBoard
-from model import LearningRateDecayCallback, get_model, masked_acc, masked_loss
-from preprocessing import preprocess_text, embedding_matrix_creater, mapper, clean_words, clean_df
-from utils import create_model_checkpoint
+
 
 from config import config
-
-from get_data import download_dataset
-from funcyou.dataset import download_kaggle_dataset
-
-
 import yaml
 
 # Define the path to your config file
@@ -182,8 +160,6 @@ class CrossAttention(BaseAttention):
         x = self.layernorm(x)
 
         return x
-
-
 
 
 class GlobalSelfAttention(BaseAttention):
