@@ -27,6 +27,7 @@ glove_path: embedding/glove.6B.50d.zip
 
 #something
 d_model : 128
+dff : 512
 num_layers : 4
 num_heads : 4
 patch_size : 42
