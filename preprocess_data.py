@@ -27,7 +27,7 @@ def check_words_in_list(string, words):
 
 
 
-def clean_the_df(filepath, save_dir):
+def clean_the_df(filepath, save_dir,IMAGE_DIR):
     # sourcery skip: use-fstring-for-concatenation
     df = pd.read_csv(filepath, sep='|')
 
