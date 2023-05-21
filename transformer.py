@@ -318,12 +318,20 @@ class Decoder(tf.keras.layers.Layer):
 
 
     def call(self, x, context):
+        tf.print('x: ', x.shape)
+        tf.print('context: ', context.shape)
+        
         x = self.positional_embedding(x)
+        tf.print('pos-emb x: ', x.shape)
+
         for i in range(self.num_layers):
             x = self.dec_layers[i](x=x, context=context)
+        
             
         self.last_attn_scores = self.dec_layers[-1].last_attn_scores
+        tf.print('afte tra x : ', x.shape)
 
+        return x
 
 
 class CaptionGenerator(tf.keras.Model):
