@@ -29,7 +29,7 @@ def check_words_in_list(string, words:list):
 
 def clean_the_df(filepath, save_dir):
     
-    df = pl.read_csv(filepath, sep='|', ignore_errors = True)
+    df = pl.read_csv(filepath, separator='|', ignore_errors = True)
     df.columns = [str(i).strip().lower() for i in df.columns]
     
     df = df.drop_nulls()
