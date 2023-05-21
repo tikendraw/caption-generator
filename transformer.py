@@ -168,10 +168,14 @@ class GlobalSelfAttention(BaseAttention):
         query=x,
         value=x,
         key=x)
+    tf.print('attn_output: ',attn_output.shape)
     x = self.add([x, attn_output])
-    x = self.layernorm(x)
-    return x
+    tf.print('concat: ',x.shape)
 
+    x = self.layernorm(x)
+    tf.print('layernorm: ',x.shape)
+
+    return x
 
 class CausalSelfAttention(BaseAttention):
   def call(self, x):
