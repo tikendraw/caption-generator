@@ -112,7 +112,7 @@ class Patches(tf.keras.layers.Layer):
             padding="VALID",
         )
         patch_dims = patches.shape[-1]
-        # tf.print(patches.shape)
+        # (patches.shape)
         patches = tf.reshape(patches, [batch_size, -1, patch_dims])
         return patches
 
@@ -129,7 +129,7 @@ class PatchEncoder(tf.keras.layers.Layer):
     def call(self, patch):
         
         positions = tf.range(start=0, limit=self.num_patches, delta=1)
-        tf.print(positions.shape)
+#         tf.print(positions.shape)
         return self.projection(patch) + self.position_embedding(positions)
 
 # Attention
