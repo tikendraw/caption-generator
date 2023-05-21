@@ -27,7 +27,7 @@ def check_words_in_list(string, words):
 
 
 
-def clean_the_df(filepath, save_dir,IMAGE_DIR):
+def clean_the_df(filepath, save_dir):
     # sourcery skip: use-fstring-for-concatenation
     df = pd.read_csv(filepath, sep='|')
 
@@ -59,8 +59,6 @@ def clean_the_df(filepath, save_dir,IMAGE_DIR):
     END_TOKEN = 'endseq'
     
     df['comment'] = START_TOKEN + ' ' + df['comment'] + ' ' + END_TOKEN
-    # Create 'image_path' column
-    df['image_path'] = os.path.join(IMAGE_DIR, df['image_name'])
     # Calculate sentence length
     df['sent_length'] = df['comment'].str.split().str.len()
     # Check if image file exists
