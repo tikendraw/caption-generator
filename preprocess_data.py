@@ -61,8 +61,6 @@ def clean_the_df(filepath, save_dir):
     df['comment'] = START_TOKEN + ' ' + df['comment'] + ' ' + END_TOKEN
     # Calculate sentence length
     df['sent_length'] = df['comment'].str.split().str.len()
-    # Check if image file exists
-    df['img_exists'] = df['image_path'].apply(os.path.isfile)
 
     # Save the dataframe
     if save_dir.endswith('.csv'):
