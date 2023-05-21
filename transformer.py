@@ -168,12 +168,12 @@ class GlobalSelfAttention(BaseAttention):
         query=x,
         value=x,
         key=x)
-    tf.print('attn_output: ',attn_output.shape)
+    # tf.print('attn_output: ',attn_output.shape)
     x = self.add([x, attn_output])
-    tf.print('concat: ',x.shape)
+    # tf.print('concat: ',x.shape)
 
     x = self.layernorm(x)
-    tf.print('layernorm: ',x.shape)
+    # tf.print('layernorm: ',x.shape)
 
     return x
 
@@ -318,18 +318,18 @@ class Decoder(tf.keras.layers.Layer):
 
 
     def call(self, x, context):
-        tf.print('x: ', x.shape)
-        tf.print('context: ', context.shape)
+        # tf.print('x: ', x.shape)
+        # tf.print('context: ', context.shape)
         
         x = self.positional_embedding(x)
-        tf.print('pos-emb x: ', x.shape)
+        # tf.print('pos-emb x: ', x.shape)
 
         for i in range(self.num_layers):
             x = self.dec_layers[i](x=x, context=context)
         
             
         self.last_attn_scores = self.dec_layers[-1].last_attn_scores
-        tf.print('afte tra x : ', x.shape)
+        # tf.print('afte tra x : ', x.shape)
 
         return x
 
