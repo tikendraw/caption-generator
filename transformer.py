@@ -380,6 +380,13 @@ class CaptionGenerator(tf.keras.Model):
 
         # Final linear layer output.
         logits = self.final_layer(x)  # (batch_size, max_len, target_vocab_size)
+        
+        try:
+      # Drop the keras mask, so it doesn't scale the losses/metrics.
+      # b/250038731
+            del logits._keras_mask
+        except AttributeError:
+            pass
 
         # Return the final output and the attention weights.
         return logits
