@@ -151,7 +151,7 @@ class imager(tf.keras.layers.Layer):
         # image_features = GlobalAveragePooling2D()(image_features)
         image_features = tf.squeeze(image_features)
         
-        image_features = tf.reshape(image_features, (batch_size, 64, d_model))
+        image_features = tf.reshape(image_features, (batch_size, -1, self.d_model))
         return image_features
 
 
