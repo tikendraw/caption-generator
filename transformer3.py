@@ -317,17 +317,12 @@ class Decoder(tf.keras.layers.Layer):
 
 
 class CaptionGenerator(tf.keras.Model):
-    def __init__(self, num_layers, d_model, num_heads, dff, vocab_size, patch_size, num_patches, image_shape , dropout_rate=0.1):
+    def __init__(self, num_layers, d_model, num_heads, dff, vocab_size, image_shape , dropout_rate=0.1):
         super().__init__()
 
-        self.encoder = Encoder(
-                            num_layers=num_layers,
-                            d_model=d_model,
-                            num_heads=num_heads,
-                            dff=dff,
+        self.imager = Imager(
                             image_shape=image_shape,
-                            num_patches=num_patches,
-                            dropout_rate=dropout_rate,
+                            d_model=d_model,
                             )
         
         self.decoder = Decoder(
@@ -339,19 +334,8 @@ class CaptionGenerator(tf.keras.Model):
                             dropout_rate=dropout_rate,
                             )
         
-        self.final_layer = tf.keras.layers.Dense(vocab_size
-                               
-        )        
-        self.decoder = Decoder(
-                            num_heads=num_heads,
-                            num_layers=num_layers,
-                            d_model=d_model,
-                            dff=dff,
-                            vocab_size=vocab_size,
-                            dropout_rate=dropout_rate,
-                            )
-        
-        self.final_layer = tf.keras.layers.Dense(vocab_size)
+        self.final_layer = tf.keras.layers.Dense(vocab_size)        
+
         
     def call(self, inputs):  # sourcery skip: inline-immediately-returned-variable, use-contextlib-suppress
         img, txt  = inputs
