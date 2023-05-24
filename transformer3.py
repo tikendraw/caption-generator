@@ -321,7 +321,7 @@ class CaptionGenerator(tf.keras.Model):
         super().__init__()
 
         self.imager = Imager(
-                            image_shape=image_shape,
+                            img_shape=image_shape,
                             d_model=d_model,
                             )
         
