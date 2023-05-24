@@ -92,7 +92,7 @@ def positional_encoding(length, depth):
     return tf.cast(pos_encoding, dtype=tf.float32)
 
 
-# Positional embedding For Image
+# Positional embedding For text
 class PositionalEmbedding(tf.keras.layers.Layer):
   def __init__(self, vocab_size, d_model):
     super().__init__()
@@ -137,13 +137,13 @@ class Patches(tf.keras.layers.Layer):
         # image_features = GlobalAveragePooling2D()(image_features)
         image_features = tf.squeeze(image_features)
         
-        image_features = tf.reshape(image_features, (batch_size, 64, -1))
+        image_features = tf.reshape(image_features, (batch_size, -1, 64))
 
         return image_features
 
 
 class PatchEncoder(tf.keras.layers.Layer):
-    def __init__(self, d_model, num_patches=64):
+    def __init__(self, d_model, num_patches=2048):
         super().__init__()
         self.num_patches = num_patches
         self.projection = Dense(units=d_model)
@@ -266,7 +266,7 @@ class Encoder(tf.keras.layers.Layer):
         
         self.patches = Patches(img_shape=self.image_shape)
         # Encode patches.
-        self.encoded_patches = PatchEncoder(num_patches=num_patches, d_model=d_model)
+        self.encoded_patches = PatchEncoder( d_model=d_model)
         
 
         self.enc_layers = [
