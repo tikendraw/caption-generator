@@ -154,7 +154,7 @@ class PatchEncoder(tf.keras.layers.Layer):
     def call(self, patch):
         
         positions = tf.range(start=0, limit=self.num_patches, delta=1)
-        tf.print(positions.shape)
+        # tf.print(positions.shape)
         return self.projection(patch) + self.position_embedding(positions)
 
 # Attention
