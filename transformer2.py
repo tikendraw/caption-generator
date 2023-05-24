@@ -132,11 +132,12 @@ class Patches(tf.keras.layers.Layer):
         
         image_features = tf.keras.applications.resnet.preprocess_input(images)
 
-        image_features = self.img_model(image_features, training=False)
+        image_features = self.img_model(image_features, training=False) # output shape (batch, 8*8* 2048)
         
         # image_features = GlobalAveragePooling2D()(image_features)
         image_features = tf.squeeze(image_features)
-        image_features = tf.reshape(image_features, (batch_size,image_features.shape[-3]*image_features.shape[-2], -1))
+        
+        image_features = tf.reshape(image_features, (batch_size, 64, -1))
 
         return image_features
 
