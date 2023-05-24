@@ -60,6 +60,21 @@ NUM_PATCHES = (IMG_SIZE // PATCH_SIZE) ** 2
 
 
 
+from tensorflow.keras.applications.resnet50 import preprocess_input
+
+# load image model
+
+def get_resnet(IMG_SHAPE):
+    resnet = tf.keras.applications.ResNet50V2(
+        include_top=False,
+        weights="imagenet",
+        input_tensor=tf.keras.layers.Input(shape=IMG_SHAPE))
+
+    resnet.trainable=False
+
+    resnet.compile()
+    return resnet
+
 
 def positional_encoding(length, depth):
     depth = depth/2
@@ -99,7 +114,7 @@ class PositionalEmbedding(tf.keras.layers.Layer):
 
 
 class Patches(tf.keras.layers.Layer):
-    def __init__(self):
+    def __init__(self, IMG_SHAPE):
         super().__init__()
 
 
@@ -107,6 +122,8 @@ class Patches(tf.keras.layers.Layer):
         batch_size = tf.shape(images)[0]
         
         image_features = tf.keras.applications.resnet.preprocess_input(images)
+        resnet = get_resnet(IMG_SHAPE)
+
         image_features = resnet(image_features, training=False)
         
         # image_features = GlobalAveragePooling2D()(image_features)
