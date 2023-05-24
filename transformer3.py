@@ -128,7 +128,7 @@ class PositionalEmbedding(tf.keras.layers.Layer):
 # resnet = get_resnet(IMG_SHAPE)
 
 
-class imager(tf.keras.layers.Layer):
+class Imager(tf.keras.layers.Layer):
     def __init__(self, img_shape, d_model):
         super().__init__()
         self.d_model=d_model
