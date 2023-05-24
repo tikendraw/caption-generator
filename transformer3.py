@@ -340,7 +340,7 @@ class CaptionGenerator(tf.keras.Model):
     def call(self, inputs):  # sourcery skip: inline-immediately-returned-variable, use-contextlib-suppress
         img, txt  = inputs
 
-        img = self.encoder(img)  # (batch_size, context_len, d_model)
+        img = self.imager(img)  # (batch_size, context_len, d_model)
 
         x = self.decoder(x=txt, context=img)  # (batch_size, target_len, d_model)
 
