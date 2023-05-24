@@ -112,20 +112,27 @@ class PositionalEmbedding(tf.keras.layers.Layer):
     return x
 
 
+# resnet = get_resnet(IMG_SHAPE)
 
-class Patches(tf.keras.layers.Layer):
+
+class Patches(tf.keras.layers.Layer, img_shape):
     def __init__(self):
         super().__init__()
+        
+        self.img_model = tf.keras.applications.ResNet50V2(
+            include_top=False,
+            weights="imagenet",
+            input_tensor=tf.keras.layers.Input(shape=img_shape))
+        self.img_model.trainable=False
+        self.img_model.compile()
 
 
     def call(self, images):
         batch_size = tf.shape(images)[0]
-        img_shape = (tf.shape(images)[1],tf.shape(images)[2],tf.shape(images)[3])
         
         image_features = tf.keras.applications.resnet.preprocess_input(images)
-        resnet = get_resnet(img_shape)
 
-        image_features = resnet(image_features, training=False)
+        image_features = self.img_model(image_features, training=False)
         
         # image_features = GlobalAveragePooling2D()(image_features)
         image_features = tf.squeeze(image_features)
@@ -245,19 +252,18 @@ class EncoderLayer(tf.keras.layers.Layer):
 
 
 class Encoder(tf.keras.layers.Layer):
-    def __init__(self, num_layers, d_model, num_heads, dff, patch_size, num_patches, dropout_rate=0.1):
+    def __init__(self, num_layers, d_model, num_heads, dff, image_shape, num_patches, dropout_rate=0.1):
         super().__init__()
 
         self.d_model = d_model
         self.num_layers = num_layers
         self.num_heads = num_heads
         self.dff = dff
-        self.patch_size = patch_size
+        self.image_shape = image_shape
         self.num_patches = num_patches
         self.dropout_rate = dropout_rate
         
-        
-        self.patches = Patches()
+        self.patches = Patches(img_shape=self.image_shape)
         # Encode patches.
         self.encoded_patches = PatchEncoder(num_patches=num_patches, d_model=d_model)
         
@@ -352,7 +358,7 @@ class Decoder(tf.keras.layers.Layer):
 
 
 class CaptionGenerator(tf.keras.Model):
-    def __init__(self, num_layers, d_model, num_heads, dff, vocab_size, patch_size, num_patches, dropout_rate=0.1):
+    def __init__(self, num_layers, d_model, num_heads, dff, vocab_size, patch_size, num_patches, image_shape , dropout_rate=0.1):
         super().__init__()
 
         self.encoder = Encoder(
@@ -360,7 +366,7 @@ class CaptionGenerator(tf.keras.Model):
                             d_model=d_model,
                             num_heads=num_heads,
                             dff=dff,
-                            patch_size=patch_size,
+                            image_shape=image_shape,
                             num_patches=num_patches,
                             dropout_rate=dropout_rate,
                             )
