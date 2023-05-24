@@ -114,15 +114,16 @@ class PositionalEmbedding(tf.keras.layers.Layer):
 
 
 class Patches(tf.keras.layers.Layer):
-    def __init__(self, IMG_SHAPE):
+    def __init__(self):
         super().__init__()
 
 
     def call(self, images):
         batch_size = tf.shape(images)[0]
+        img_shape = (tf.shape(images)[1],tf.shape(images)[2],tf.shape(images)[3])
         
         image_features = tf.keras.applications.resnet.preprocess_input(images)
-        resnet = get_resnet(IMG_SHAPE)
+        resnet = get_resnet(img_shape)
 
         image_features = resnet(image_features, training=False)
         
