@@ -115,8 +115,8 @@ class PositionalEmbedding(tf.keras.layers.Layer):
 # resnet = get_resnet(IMG_SHAPE)
 
 
-class Patches(tf.keras.layers.Layer, img_shape):
-    def __init__(self):
+class Patches(tf.keras.layers.Layer):
+    def __init__(self, img_shape):
         super().__init__()
         
         self.img_model = tf.keras.applications.ResNet50V2(
