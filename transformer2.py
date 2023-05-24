@@ -18,8 +18,8 @@ from tensorflow.keras.layers import (
     )
 
 import string
-
-
+from tensorflow.keras import layers
+from tensorflow import keras 
 from config import config
 import yaml
 
@@ -74,6 +74,17 @@ def get_resnet(IMG_SHAPE):
 
     resnet.compile()
     return resnet
+
+data_augmentation = keras.Sequential(
+    [
+        layers.RandomFlip("horizontal"),
+        layers.RandomRotation(factor=0.02),
+        layers.RandomZoom(
+            height_factor=0.2, width_factor=0.2
+        ),
+    ],
+    name="data_augmentation",
+)
 
 
 def positional_encoding(length, depth):
@@ -137,13 +148,12 @@ class Patches(tf.keras.layers.Layer):
         # image_features = GlobalAveragePooling2D()(image_features)
         image_features = tf.squeeze(image_features)
         
-        image_features = tf.reshape(image_features, (batch_size, -1, 64))
-
+        image_features = tf.reshape(image_features, (batch_size, 64, -1))
         return image_features
 
 
 class PatchEncoder(tf.keras.layers.Layer):
-    def __init__(self, d_model, num_patches=2048):
+    def __init__(self, d_model, num_patches=64):
         super().__init__()
         self.num_patches = num_patches
         self.projection = Dense(units=d_model)

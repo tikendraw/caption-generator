@@ -18,7 +18,8 @@ from tensorflow.keras.layers import (
     )
 
 import string
-
+from tensorflow.keras import layers
+from tensorflow import keras 
 
 from config import config
 import yaml
@@ -59,6 +60,16 @@ NUM_PATCHES = (IMG_SIZE // PATCH_SIZE) ** 2
 # trick here is to match max_len to num_patches for matching the shapes for concatination
 
 
+data_augmentation = keras.Sequential(
+    [
+        layers.RandomFlip("horizontal"),
+        layers.RandomRotation(factor=0.02),
+        layers.RandomZoom(
+            height_factor=0.2, width_factor=0.2
+        ),
+    ],
+    name="data_augmentation",
+)
 
 
 def positional_encoding(length, depth):
@@ -238,7 +249,7 @@ class Encoder(tf.keras.layers.Layer):
         self.patch_size = patch_size
         self.num_patches = num_patches
         self.dropout_rate = dropout_rate
-        
+        self.augment = data_augmentation
         
         self.patches = Patches(patch_size)
         # Encode patches.
@@ -254,16 +265,17 @@ class Encoder(tf.keras.layers.Layer):
         self.dropout = tf.keras.layers.Dropout(dropout_rate)
 
     def call(self, x):
-        # `x` is token-IDs shape: (batch, seq_len)
-        x = self.patches(x)  # Shape `(batch_size, seq_len, d_model)`.
-        x = self.encoded_patches(x)
+        # `x` is token-IDs shape: (batch, images)
+        x = self.augment(x)
+        x = self.patches(x)  # Shape `(batch_size, num_patches, -1)`.
+        x = self.encoded_patches(x) # Shape `(batch_size, num_patches, d_model)`.
         # Add dropout.
         x = self.dropout(x)
 
         for i in range(self.num_layers):
             x = self.enc_layers[i](x)
 
-        return x  # Shape `(batch_size, seq_len, d_model)`.
+        return x  # Shape `(batch_size, num_patches, d_model)`.
 
 
 class DecoderLayer(tf.keras.layers.Layer):
@@ -374,7 +386,7 @@ class CaptionGenerator(tf.keras.Model):
     def call(self, inputs):  # sourcery skip: inline-immediately-returned-variable, use-contextlib-suppress
         img, txt  = inputs
 
-        img = self.encoder(img)  # (batch_size, context_len, d_model)
+        img = self.encoder(img)  # (batch_size, num_patches, d_model)
 
         x = self.decoder(x=txt, context=img)  # (batch_size, target_len, d_model)
 
