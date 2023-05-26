@@ -118,8 +118,8 @@ resnet.trainable = False
 def load_images_now(x):
     image_data = tf.io.read_file(x)
     image_features = tf.image.decode_jpeg(image_data, channels=CHANNELS)
-    image_features = tf.image.resize_with_pad(
-        image_features, target_height=IMG_SIZE, target_width=IMG_SIZE)
+    image_features = tf.image.resize(
+        image_features, (IMG_SIZE, IMG_SIZE))
     image_features = tf.keras.applications.resnet.preprocess_input(
         image_features)
     image_features = tf.reshape(

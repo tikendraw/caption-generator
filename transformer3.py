@@ -334,7 +334,7 @@ class CaptionGenerator(tf.keras.Model):
                             dropout_rate=dropout_rate,
                             )
         
-        self.final_layer = tf.keras.layers.Dense(vocab_size)        
+        self.final_layer = tf.keras.layers.Dense(vocab_size, activation='softmax')        
 
         
     def call(self, inputs):  # sourcery skip: inline-immediately-returned-variable, use-contextlib-suppress
