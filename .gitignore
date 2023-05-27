@@ -6,3 +6,4 @@ drive/
 __pycache__/
 .ipynb_checkpoints/
 cleaned.csv
+.swm/
