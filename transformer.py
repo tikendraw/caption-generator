@@ -73,40 +73,40 @@ data_augmentation = keras.Sequential(
 )
 
 
-# def positional_encoding(length, depth):
-#     depth = depth/2
+def positional_encoding(length, depth):
+    depth = depth/2
 
-#     positions = np.arange(length)[:, np.newaxis]     # (seq, 1)
-#     depths = np.arange(depth)[np.newaxis, :]/depth   # (1, depth)
+    positions = np.arange(length)[:, np.newaxis]     # (seq, 1)
+    depths = np.arange(depth)[np.newaxis, :]/depth   # (1, depth)
 
-#     angle_rates = 1 / (10000**depths)         # (1, depth)
-#     angle_rads = positions * angle_rates      # (pos, depth)
+    angle_rates = 1 / (10000**depths)         # (1, depth)
+    angle_rads = positions * angle_rates      # (pos, depth)
 
-#     pos_encoding = np.concatenate(
-#         [np.sin(angle_rads), np.cos(angle_rads)],
-#         axis=-1)        
+    pos_encoding = np.concatenate(
+        [np.sin(angle_rads), np.cos(angle_rads)],
+        axis=-1)        
 
-#     return tf.cast(pos_encoding, dtype=tf.float32)
+    return tf.cast(pos_encoding, dtype=tf.float32)
 
 
-# # Positional embedding For Image
-# class PositionalEmbedding(tf.keras.layers.Layer):
-#   def __init__(self, vocab_size, d_model):
-#     super().__init__()
-#     self.d_model = d_model
-#     self.embedding = tf.keras.layers.Embedding(vocab_size, d_model, mask_zero=True) 
-#     self.pos_encoding = positional_encoding(length=2048, depth=d_model)
+# Positional embedding For Image
+class PositionalEmbedding(tf.keras.layers.Layer):
+    def __init__(self, vocab_size, d_model):
+        super().__init__()
+        self.d_model = d_model
+        self.embedding = tf.keras.layers.Embedding(vocab_size, d_model, mask_zero=True) 
+        self.pos_encoding = positional_encoding(length=2048, depth=d_model)
 
-#   def compute_mask(self, *args, **kwargs):
-#     return self.embedding.compute_mask(*args, **kwargs)
+    def compute_mask(self, *args, **kwargs):
+        return self.embedding.compute_mask(*args, **kwargs)
 
-#   def call(self, x):
-#     length = tf.shape(x)[1]
-#     x = self.embedding(x)
-#     # This factor sets the relative scale of the embedding and positonal_encoding.
-#     x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
-#     x = x + self.pos_encoding[tf.newaxis, :length, :]
-#     return x
+    def call(self, x):
+        length = tf.shape(x)[1]
+        x = self.embedding(x)
+        # This factor sets the relative scale of the embedding and positonal_encoding.
+        x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
+        x = x + self.pos_encoding[tf.newaxis, :length, :]
+        return x
 
 
 # class Patches(tf.keras.layers.Layer):
@@ -146,26 +146,7 @@ data_augmentation = keras.Sequential(
 
 # Embedding
 
-class SeqEmbedding(tf.keras.layers.Layer):
-    def __init__(self, vocab_size, max_length, d_model):
-        super().__init__()
-        self.pos_embedding = tf.keras.layers.Embedding(input_dim=max_length, output_dim=d_model)
 
-        self.token_embedding = tf.keras.layers.Embedding(
-            input_dim=vocab_size,
-            output_dim=d_model,
-            mask_zero=True)
-
-        self.add = tf.keras.layers.Add()
-
-    def call(self, seq):
-        seq = self.token_embedding(seq) # (batch, seq, d_model)
-
-        x = tf.range(tf.shape(seq)[1])  # (seq)
-        x = x[tf.newaxis, :]  # (1, seq)
-        x = self.pos_embedding(x)  # (1, seq, d_model)
-
-        return self.add([seq,x])
 
 
 # Attention
@@ -297,7 +278,65 @@ class TokenOutput(tf.keras.layers.Layer):
         # the losses.
         return x + self.bias
 
+class Captioner(tf.keras.Model):
 
+    def __init__(self, tokenizer, feature_extractor, output_layer, num_layers=1,dff=512,
+                   d_model=256, max_length=50, num_heads=1, dropout_rate=0.1):
+        super().__init__()
+        self.feature_extractor = feature_extractor
+        self.tokenizer = tokenizer
+        self.word_to_index = tf.keras.layers.StringLookup(
+            mask_token="",
+            vocabulary=tokenizer.get_vocabulary())
+        self.index_to_word = tf.keras.layers.StringLookup(
+            mask_token="",
+            vocabulary=tokenizer.get_vocabulary(),
+            invert=True) 
+
+        self.seq_embedding = PositionalEmbedding(
+            vocab_size=tokenizer.vocabulary_size(),
+            d_model=d_model
+            )
+
+        self.decoder_layers = [
+            DecoderLayer(
+                dff=dff,
+                d_model=d_model,
+                num_heads=num_heads,
+                dropout_rate=dropout_rate,
+            )
+            for _ in range(num_layers)
+        ]
+
+        self.output_layer = output_layer
+        
+    def call(self, inputs):
+        image, txt = inputs
+
+        if image.shape[-1] == 3:
+            # Apply the feature-extractor, if you get an RGB image.
+            image = self.feature_extractor(image)
+
+        # Flatten the feature map
+        image = einops.rearrange(image, 'b h w c -> b (h w) c')
+
+
+        if txt.dtype == tf.string:
+            # Apply the tokenizer if you get string inputs.
+            txt = tokenizer(txt)
+
+        txt = self.seq_embedding(txt)
+
+        # Look at the image
+        for dec_layer in self.decoder_layers:
+            txt = dec_layer(inputs=(image, txt))
+
+        txt = self.output_layer(txt)
+
+        return txt
+    
+    
+    
 
 if __name__=='__main__':
     print('transformer.py')
