@@ -293,20 +293,11 @@ class Captioner(tf.keras.Model):
             vocabulary=tokenizer.get_vocabulary(),
             invert=True) 
 
-        self.seq_embedding = PositionalEmbedding(
-            vocab_size=tokenizer.vocabulary_size(),
-            d_model=d_model
-            )
+        self.seq_embedding = PositionalEmbedding(vocab_size=tokenizer.vocabulary_size(),max_len=max_length, d_model=d_model       )
 
         self.decoder_layers = [
-            DecoderLayer(
-                dff=dff,
-                d_model=d_model,
-                num_heads=num_heads,
-                dropout_rate=dropout_rate,
-            )
-            for _ in range(num_layers)
-        ]
+            DecoderLayer( dff=dff, d_model=d_model, num_heads=num_heads, dropout_rate=dropout_rate)
+            for n in range(num_layers)]
 
         self.output_layer = output_layer
         
@@ -333,8 +324,7 @@ class Captioner(tf.keras.Model):
 
         txt = self.output_layer(txt)
 
-        return txt
-    
+        return txt    
     
     
 
