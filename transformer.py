@@ -23,7 +23,8 @@ from tensorflow import keras
 
 from config import config
 import yaml
-
+from collections import Counter
+import tqdm
 # Define the path to your config file
 config_file_path = './config.yaml'
 
@@ -260,7 +261,7 @@ class TokenOutput(tf.keras.layers.Layer):
         self.bias = None
 
     def adapt(self, ds):
-        counts = collections.Counter()
+        counts = Counter()
         vocab_dict = {name: id 
                         for id, name in enumerate(self.tokenizer.get_vocabulary())}
 
